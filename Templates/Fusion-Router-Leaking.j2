@@ -1,0 +1,7 @@
+{% for list in config.prefixlists%}
+{% for permit in list.permits %}
+ip prefix-list {{list.name}} seq {{loop.index*10}} permit {{permit}}
+{%endfor%}
+route-map {{list.name}} permit 10
+    match ip address prefix-list {{list.name}}
+{%endfor%}

@@ -1,0 +1,152 @@
+ip routing
+service unsupported-transceiver
+transceiver type all
+hostname {{config.hostname}}
+ip domain-name {{config.domain}}
+{% for user in config.auth.users %}
+username {{ user.username }} privilege 15 secret {{ user.password }}
+{% endfor %}
+enable secret {{config.enablepassword}}
+!AAA
+aaa new-model
+aaa authentication login default local
+aaa authorization exec default local
+
+!STIGS NDM
+!CAT I
+!SV-220534r531084_rule
+no boot network
+no ip boot server
+no ip bootp server
+no ip dns server
+no ip identd
+no ip finger
+no ip http server
+no ip rcmd rcp-enable
+no ip rcmd rsh-enable
+no service config
+no service finger
+no service tcp-small-servers
+no service udp-small-servers
+
+!SV-220543r531084_rule
+service password-encryption
+
+!SV-220544r531084_rule
+ip http secure-server
+ip http timeout-policy idle 600 life 300 requests 30
+line vty 0 4
+exec-timeout 10 0
+line con 0
+exec-timeout 10 0
+
+!SV-220555r531084_rule & SV-220536r531084_rule
+crypto key generate rsa mode 4096
+ip ssh version 2
+ip ssh server algorithm mac hmac-sha2-512 hmac-sha2-256
+
+!SV-220556r531084_rule & SV-220536r531084_rule
+ip ssh server algorithm encryption aes256-ctr aes192-ctr aes128-ctr
+
+!CAT 2
+!SV-220518r531084_rule
+ip http max-connections 2
+line vty 0 4
+session-limit 2
+
+!SV-220519r531084_rule
+log config 
+logging enable
+
+!SV-220520r531084_rule & SV-220521r531084_rule & SV-220522r531084_rule & SV-220530r531084_rule & SV-220545r531084_rule & SV-220546r531084_rule & SV-220558r531084_rule
+!& SV-220559r531084_rule & SV-220561r531084_rule
+archive
+log config
+logging enable
+
+!SV-220524r531084_rule
+login block-for 900 attempts 3 within 120
+
+!SV-220525r531084_rule
+banner login #
+You are accessing a U.S. Government (USG) Information System (IS) that is provided for USG-authorized use only.
+
+By using this IS (which includes any device attached to this IS), you consent to the following conditions:
+
+-The USG routinely intercepts and monitors communications on this IS for purposes including, but not limited to, penetration testing, COMSEC monitoring, network operations and defense, personnel misconduct (PM), law enforcement (LE), and counterintelligence (CI) investigations.
+
+-At any time, the USG may inspect and seize data stored on this IS.
+
+-Communications using, or data stored on, this IS are not private, are subject to routine monitoring, interception, and search, and may be disclosed or used for any USG-authorized purpose.
+
+-This IS includes security measures (e.g., authentication and access controls) to protect USG interests--not for your personal benefit or privacy.
+
+-Notwithstanding the above, using this IS does not constitute consent to PM, LE or CI investigative searching or monitoring of the content of privileged communications, or work product, related to personal representation or services by attorneys, psychotherapists, or clergy, and their assistants. Such communications and work product are private and confidential. See User Agreement for details. #
+
+!SV-220526r531084_rule & SV-220546r531084_rule & SV-220558r531084_rule
+logging userinfo
+
+!SV-220527r531084_rule & SV-220560r531084_rule & SV-220563r531084_rule
+login on-failure log
+login on-success log
+
+!SV-220528r531084_rule
+service timestamps log datetime localtime
+
+!SV-220531r531084_rule & SV-220532r531084_rule & SV-220533r531084_rule
+file privilege 15
+
+!SV-220537r531084_rule & SV-220538r531084_rule & SV-220539r531084_rule & SV-220540r531084_rule & SV-220541r531084_rule & SV-220542r531084_rule
+aaa common-criteria policy PASSWORD_POLICY
+min-length 15
+upper-case 1
+lower-case 1
+numeric-count 1
+special-case 1
+char-changes 8
+
+!SV-220547r531084_rule
+logging buffered 409600 informational
+
+!SV-220550r531084_rule & SV-220551r531084_rule
+service timestamps log datetime localtime
+clock timezone EST -5
+
+!SV-220568r531084_rule & SV-220548r531084_rule
+logging trap notifications
+logging trap critical
+{% for hosts in config.logging.hosts %}
+logging host {{hosts.ipaddr}}
+{%endfor%}
+
+!SV-220523r539418_rule
+ip access-list standard MANAGEMENT_NET
+{% for state in config.acls.managment %}
+    permit {{state.subnet}} {{state.mask}}
+{%endfor%}
+    deny any any log
+line vty 0 4
+    access-class MANAGEMENT_NET in
+    transport input ssh
+
+!SV-220554r531084_rule & SV-220549r531084_rule
+ntp authenticate
+{% for srv in config.ntp.servers%}
+ntp authentication-key {{srv.ipaddr}} md5 {{srv.md5key}}
+ntp trusted-key {{srv.name}}
+ntp server {{srv.ipaddr}} key {{srv.name}}
+{%endfor%}
+
+!SV-220552r531084_rule & SV-220553r531084_rule
+{% for view in config.snmp.views %}
+snmp-server view {{view.name}} {{view.mibs | join(' ')}} included
+{%endfor%} 
+{% for group in config.snmp.groups %}
+snmp-server group {{group.name}} v3 priv read {{group.readView}} write {{group.writeView}}
+{%endfor%}
+{% for user in config.snmp.users %}
+snmp-server user {{user.name}} {{user.group}} v3 auth {{user.auth.hashfunc}} {{user.auth.key}} priv {{user.priv.encryptionmethod}} {{user.priv.encryptionlength}} {{user.priv.passphrase}}
+{%endfor%}
+
+{% include "ios-xe-interfaces.j2" %}
+{% include "ios-xe-static-routes.j2" %}

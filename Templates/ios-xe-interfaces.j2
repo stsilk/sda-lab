@@ -1,0 +1,23 @@
+{%for interface in config.interfaces%}
+interface {{interface.interface}}
+{% if interface.switchport.isSwitchport == True %}
+switchport
+{% if interface.switchport.mode == Trunk %}
+switchport mode trunk
+{%endif%}
+{% if interface.switchport.mode == access %}
+switchport mode access
+switchport access vlan {{interface.switchport.vlan}}
+{%endif%}
+{%endif%}
+{% if interface.description is defined %}
+ description {{interface.description}}
+{%endif%}
+{% if interface.vrf is defined %}
+ vrf forwarding {{interface.vrf}}
+{% endif %}
+{% if interface.ipaddr is defined %}
+ ip address {{interface.ipaddr}} {{interface.mask}}
+{% endif %}
+no shutdown
+{%endfor%}

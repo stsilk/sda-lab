@@ -1,0 +1,34 @@
+bgp {{config.bgp.localAS}}
+    bgp router-id {{config.bgp.routerid}}
+    bgp log-neighbor-changes
+{% for neighbor in config.bgp.globalNeighbors %}
+    neighbor {{neighbor.ipaddr}} remote-as {{neighbor.remoteAS}}
+    neighbor {{neighbor.ipaddr}} password 7 {{neighbor.type7Password}}
+    neighbor {{neighbor.ipaddr}} update-source {{neighbor.updateSource}}
+    address-family ipv4
+        neighbor {{neighbor.ipaddr}} activate
+        neighbor {{neighbor.ipaddr}} advertisement-interval 0
+        neighbor {{neighbor.ipaddr}} maximum-prefix 250
+{%endfor%}
+{% if config.bgp.vrfNeighbors is defined%}
+{% for neighbor in config.bgp.vrfNeighbors %}
+    address-family ipv4 vrf {{neighbor.vrf}}
+        neighbor {{neighbor.ipaddr}} remote-as {{neighbor.remoteAS}}
+        neighbor {{neighbor.ipaddr}} activate
+        neighbor {{neighbor.ipaddr}} weight 65535
+{%endfor%}
+{%endif%}
+{%if config.bgp.globalNetworks is defined %}
+    address-family ipv4
+{% for network in config.bgp.globalNetworks %}
+        network {{network.subnet}} mask {{network.mask}}
+{%endfor%}
+{%endif%}
+{%if config.bgp.vrfs is defined %}
+{% for vrf in config.bgp.vrfs %}
+        address-family ipv4 vrf {{vrf.name}}
+{% for network in vrf.networks %}
+        network {{network.subnet}} mask {{network.mask}}
+{%endfor%}
+{%endfor%}
+{%endif%}

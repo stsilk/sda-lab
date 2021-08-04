@@ -1,0 +1,3 @@
+{% for route in config.routes %}
+ip route {{route.dstaddr}} {{route.dstmask}} {{route.nexthop}}
+{%endfor%}

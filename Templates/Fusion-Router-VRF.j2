@@ -1,0 +1,12 @@
+{% for vrf in config.vrfs %}
+vrf definition {{vrf.name}}
+ rd {{vrf.rd}}
+  address-family ipv4
+{% for mapImport in vrf.imports %}
+   import ipv4 unicast map {{mapImport.name}}
+{%endfor%}
+{% for mapExport in vrf.exports %}
+   export ipv4 unicast map {{mapExport.name}}
+{%endfor%}
+   route-target both {{vrf.rd}}
+{%endfor%}
